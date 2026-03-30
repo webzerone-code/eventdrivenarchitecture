@@ -17,7 +17,7 @@ async function bootstrap() {
         deserializer: {
           deserialize: (value) => {
             const pattern = value.schema.name.replace('.Envelope', '');
-            return { pattern, data: value };
+            return { pattern, data: value.payload };
           },
         },
       },

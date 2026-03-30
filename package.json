@@ -22,9 +22,11 @@
     "start:prod:restaurant-service": "node dist/apps/restaurant-service/main"
   },
   "dependencies": {
+    "@elastic/elasticsearch": "^8.19.1",
     "@nestjs/common": "^11.0.1",
     "@nestjs/config": "^4.0.3",
     "@nestjs/core": "^11.0.1",
+    "@nestjs/elasticsearch": "^11.1.0",
     "@nestjs/microservices": "^11.1.17",
     "@nestjs/mongoose": "^11.0.4",
     "@nestjs/platform-express": "^11.0.1",
