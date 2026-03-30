@@ -34,6 +34,7 @@ export class RestaurantServiceController {
       index: 'orders',
       id: String(elasticId),
       document: {
+        id: elasticId,
         name: rawData.name,
         description: rawData.description,
         price: rawData.price,
