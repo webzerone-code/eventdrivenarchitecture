@@ -1,0 +1,173 @@
+version: '3.9'
+
+services:
+
+  # -------------------- RabbitMQ --------------------
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq-e
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+#    volumes:
+#      - ./infra/rabbitmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro
+#      - ./infra/rabbitmq/definitions.json:/etc/rabbitmq/definitions.json:ro
+    environment:
+      RABBITMQ_DEFAULT_USER: admin
+      RABBITMQ_DEFAULT_PASS: admin
+    healthcheck:
+      test: [ "CMD", "rabbitmq-diagnostics", "-q", "ping" ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - restaurant
+
+  rabbitmq-setup:
+    image: rabbitmq:3-management
+    container_name: rabbitmq-setup
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - restaurant
+    entrypoint: >
+      /bin/bash -c "
+       echo 'Waiting for RabbitMQ to be ready...';
+       sleep 10;
+       # 1. Create the Exchange
+       rabbitmqadmin declare exchange --host=rabbitmq-e --user=admin --password=admin name=debezium type=topic;
+       # 2. Create the Queue
+       rabbitmqadmin declare queue --host=rabbitmq-e --user=admin --password=admin name=orders_queue durable=true;
+       # 3. Create the Binding using the BROADEST wildcard
+       rabbitmqadmin declare binding --host=rabbitmq-e --user=admin --password=admin source=debezium destination=orders_queue routing_key='#'
+       echo 'Binding forced with # wildcard.';
+       "
+
+  # -------------------- MongoDB --------------------
+  mongo-db:
+    image: mongo:7
+    container_name: nest-mongo-e
+    command: ["--replSet", "rs0", "--bind_ip_all","--port", "27017"]
+    restart: always
+    ports:
+      - "27017:27017"
+    environment:
+#      MONGO_INITDB_ROOT_USERNAME: root
+#      MONGO_INITDB_ROOT_PASSWORD: root
+      MONGO_INITDB_DATABASE: restaurant
+    volumes:
+      - rest_mongo_data:/data/db
+    healthcheck:
+      test: echo "try { rs.status() } catch (err) { rs.initiate({_id:'rs0',members:[{_id:0,host:'localhost:27017'}]}) }" | mongosh --port 27017 --quiet
+      interval: 5s
+      timeout: 30s
+      start_period: 0s
+      retries: 30
+    networks:
+      - restaurant
+  # -------------------- MongoDB Replica Set Init --------------------
+
+  mongo-init:
+    image: mongo:7
+    depends_on:
+      - mongo-db
+    networks:
+      - restaurant
+    restart: "no"
+    entrypoint: >
+      bash -c "
+      echo 'Waiting for MongoDB to be ready...';
+      until mongosh --host mongo-db:27017 --eval 'db.adminCommand({ ping: 1 })' >/dev/null 2>&1; do
+        sleep 2;
+      done;
+      echo 'MongoDB is ready. Initializing replica set...';
+      mongosh --host mongo-db:27017 --eval '
+        try {
+          rs.status()
+        } catch (e) {
+          rs.initiate({
+            _id: \"rs0\",
+            members: [{ _id: 0, host: \"mongo-db:27017\" }]
+          })
+        }
+      ';
+      echo 'Replica set init done.';
+      "
+
+
+  # -------------------- Redis (Caching Layer) --------------------
+  redis:
+    image: redis:alpine
+    container_name: redis-e
+    ports:
+      - "6379:6379"
+    networks:
+      - restaurant
+
+  # -------------------- Elasticsearch (Search Engine) --------------------
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.12.0
+    container_name: elasticsearch
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=true
+      #- ELASTIC_USERNAME=elastic
+      - ELASTIC_PASSWORD=password
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ports:
+      - "9200:9200"
+    networks:
+      - restaurant
+
+  debezium:
+    image: quay.io/debezium/server:3.0.0.Final
+    container_name: debezium-server
+    restart: on-failure
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      mongo-init:
+        condition: service_completed_successfully
+    volumes:
+      - debezium_data:/debezium/data
+    ports:
+      - '8083:8083'
+    networks:
+      - restaurant
+    environment:
+      # Sink (RabbitMQ)
+      - debezium.sink.type=rabbitmq
+      - debezium.sink.rabbitmq.connection.host=rabbitmq
+      - debezium.sink.rabbitmq.connection.username=admin
+      - debezium.sink.rabbitmq.connection.password=admin
+
+      # Source (MongoDB)
+      - debezium.source.connector.class=io.debezium.connector.mongodb.MongoDbConnector
+      - debezium.source.mongodb.connection.string=mongodb://mongo-db:27017/?replicaSet=rs0
+      - debezium.source.topic.prefix=restaurant_cdc
+      - debezium.source.mongodb.database.include_list=restaurant
+      - debezium.source.mongodb.collection.include_list=restaurant.orders
+#      - debezium.sink.rabbitmq.exchange.type=topic
+#      - debezium.sink.rabbitmq.routing-key=restaurant_cdc.restaurant.orders
+      - debezium.sink.rabbitmq.exchange=debezium
+      - debezium.sink.rabbitmq.exchange.type=topic
+      # Use the dynamic topic name as the routing key
+      - debezium.sink.rabbitmq.routingKey.source=topic
+
+      # Offsets (Persistent Storage)
+      - debezium.source.offset.storage.type=file
+      - debezium.source.offset.storage.file.filename=/debezium/data/offsets.dat
+
+      # Format
+      - debezium.format.value=json
+
+# -------------------- NETWORK --------------------
+networks:
+  restaurant:
+    driver: bridge
+
+# -------------------- VOLUMES --------------------
+volumes:
+  rest_mongo_data:
+  debezium_data:

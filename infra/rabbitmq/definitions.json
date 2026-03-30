@@ -1,0 +1,43 @@
+{
+  "users": [{ "name": "admin", "password": "admin", "tags": "administrator" }],
+  "vhosts": [{ "name": "/" }],
+  "permissions": [
+    {
+      "user": "admin",
+      "vhost": "/",
+      "configure": ".*",
+      "write": ".*",
+      "read": ".*"
+    }
+  ],
+  "exchanges": [
+    {
+      "name": "restaurant_cdc.restaurant.orders",
+      "vhost": "/",
+      "type": "topic",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    }
+  ],
+  "queues": [
+    {
+      "name": "orders_queue",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {}
+    }
+  ],
+  "bindings": [
+    {
+      "source": "restaurant_cdc.restaurant.orders",
+      "vhost": "/",
+      "destination": "orders_queue",
+      "destination_type": "queue",
+      "routing_key": "restaurant_cdc.restaurant.orders",
+      "arguments": {}
+    }
+  ]
+}
