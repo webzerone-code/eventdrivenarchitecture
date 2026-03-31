@@ -7,10 +7,11 @@ import { Order, OrderSchema } from './schemas/order.schema';
 import dbConfig from '../../config/db.config';
 import { CacheModule } from '@nestjs/cache-manager';
 import { redisStore } from 'cache-manager-redis-yet';
+import redisConfig from '../../config/redis.config';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true, load: [dbConfig] }),
+    ConfigModule.forRoot({ isGlobal: true, load: [dbConfig, redisConfig] }),
     MongooseModule.forRootAsync({
       inject: [dbConfig.KEY],
       useFactory: (
@@ -19,12 +20,17 @@ import { redisStore } from 'cache-manager-redis-yet';
         uri: mongoConfig.mongoUrlConnection.uri,
       }),
     }),
-    CacheModule.register({
+    CacheModule.registerAsync({
+      inject: [redisConfig.KEY],
       isGlobal: true,
-      store: redisStore,
-      host: 'redis',
-      port: 6379,
-      ttl: 3600000,
+      useFactory: (cacheConfig: ConfigType<typeof redisConfig>) => ({
+        store: redisStore,
+        socket: {
+          host: cacheConfig.REDIS_HOST,
+          port: cacheConfig.REDIS_PORT,
+        },
+        ttl: 86400000,
+      }),
     }),
     MongooseModule.forFeature([{ name: Order.name, schema: OrderSchema }]),
   ],

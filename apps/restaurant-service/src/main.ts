@@ -3,16 +3,18 @@ import { RestaurantServiceModule } from './restaurant-service.module';
 import { MicroserviceOptions, Transport } from '@nestjs/microservices';
 
 async function bootstrap() {
-  console.log(`Restaurant  listening on port ${process.env.port ?? 4000}`);
+  console.log(
+    `Restaurant  listening on port ${process.env.RESTAURANT_SERVICE_PORT ?? 4000}`,
+  );
   const app = await NestFactory.createMicroservice<MicroserviceOptions>(
     RestaurantServiceModule,
     {
       transport: Transport.RMQ,
       options: {
-        urls: ['amqp://admin:admin@localhost:5672'],
-        queue: 'orders_queue', // Must match the name in definitions.json
+        urls: [process.env.RABBITMQ ?? 'amqp://admin:admin@localhost:5673'],
+        queue: process.env.MESSAGE_QUEUE ?? 'orders_queue',
         queueOptions: {
-          durable: true, // Matches your definitions.json
+          durable: true,
         },
         deserializer: {
           deserialize: (value) => {
