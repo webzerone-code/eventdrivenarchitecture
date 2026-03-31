@@ -18,9 +18,29 @@ export class RestaurantController {
   constructor(private readonly restaurantService: RestaurantService) {}
 
   // Get Order
-
+  @Get()
+  async getOrders(): Promise<Order[]> {
+    try {
+      return await this.restaurantService.getOrders();
+    } catch (err) {
+      throw new HttpException(
+        `Error fetching orders: ${err?.message}`,
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
   // Get Order By ID
-
+  @Get(':id')
+  async getOrderById(@Param('id') id: string): Promise<Order> {
+    try {
+      return await this.restaurantService.getOrderById(id);
+    } catch (err) {
+      throw new HttpException(
+        `Error fetching order by ID: ${err?.message}`,
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
   // Create Order
   @Post()
   async createOrder(@Body() createOrderDto: CreateOrderDto): Promise<Order> {

@@ -10,6 +10,26 @@ export class RestaurantService {
     @InjectModel(Order.name)
     private readonly orderModel: Model<Order>,
   ) {}
+  async getOrders(): Promise<Order[]> {
+    try {
+      return await this.orderModel.find().sort({ createdAt: -1 }).exec();
+    } catch (err) {
+      throw new BadRequestException({
+        message: `Error fetching orders: ${err?.message}`,
+        error: 'Internal Server Error',
+      });
+    }
+  }
+  async getOrderById(id: string): Promise<Order> {
+    if (!isValidObjectId(id))
+      throw new BadRequestException({
+        message: 'Invalid Order ID',
+        error: 'Invalid ID',
+      });
+    const order = await this.orderModel.findById(id);
+    if (!order) throw new BadRequestException('Order not found');
+    return order;
+  }
 
   async createOrder(createOrderDto: CreateOrderDto): Promise<Order> {
     const { products } = createOrderDto;
