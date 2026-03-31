@@ -1,6 +1,35 @@
 version: '3.9'
 
 services:
+  restaurant-api:
+    container_name: restaurant-api
+    build:
+      context: .
+      args:
+        - APP_NAME=restaurant
+    ports:
+      - "3000:3000"
+    depends_on:
+      - mongo-db
+      - redis
+      - elasticsearch
+    env_file:
+      - .env
+    networks:
+      - restaurant
+
+  search-service:
+    container_name: restaurant-service
+    build:
+      context: .
+      args:
+        - APP_NAME=restaurant-service
+    depends_on:
+      - elasticsearch
+    env_file:
+      - .env
+    networks:
+      - restaurant
 
   # -------------------- RabbitMQ --------------------
   rabbitmq:

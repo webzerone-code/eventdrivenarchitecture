@@ -8,10 +8,17 @@ import dbConfig from '../../config/db.config';
 import { CacheModule } from '@nestjs/cache-manager';
 import { redisStore } from 'cache-manager-redis-yet';
 import redisConfig from '../../config/redis.config';
+import { ElasticsearchModule } from '@nestjs/elasticsearch';
+import elasticConfig from '../../config/elastic.config';
+import { ElasticController } from './elastic.controller';
+import { ElasticService } from './elastic.service';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true, load: [dbConfig, redisConfig] }),
+    ConfigModule.forRoot({
+      isGlobal: true,
+      load: [dbConfig, redisConfig, elasticConfig],
+    }),
     MongooseModule.forRootAsync({
       inject: [dbConfig.KEY],
       useFactory: (
@@ -32,9 +39,25 @@ import redisConfig from '../../config/redis.config';
         ttl: 86400000,
       }),
     }),
+    ElasticsearchModule.registerAsync({
+      inject: [elasticConfig.KEY],
+      useFactory: (elasticConf: ConfigType<typeof elasticConfig>) => ({
+        node: elasticConf.elasticConnection.url,
+        maxRetries: 10,
+        requestTimeout: 60000,
+        pingTimeout: 60000,
+        auth: {
+          username: String(elasticConf.elasticConnection.username),
+          password: String(elasticConf.elasticConnection.password),
+        },
+        tls: {
+          rejectUnauthorized: false,
+        },
+      }),
+    }),
     MongooseModule.forFeature([{ name: Order.name, schema: OrderSchema }]),
   ],
-  controllers: [RestaurantController],
-  providers: [RestaurantService],
+  controllers: [RestaurantController, ElasticController],
+  providers: [RestaurantService, ElasticService],
 })
 export class RestaurantModule {}

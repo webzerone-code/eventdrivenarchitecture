@@ -4,7 +4,6 @@ import {
   Get,
   HttpException,
   HttpStatus,
-  Inject,
   Param,
   Patch,
   Post,
@@ -22,9 +21,9 @@ export class RestaurantController {
   async getOrders(): Promise<Order[]> {
     try {
       return await this.restaurantService.getOrders();
-    } catch (err) {
+    } catch (error) {
       throw new HttpException(
-        `Error fetching orders: ${err?.message}`,
+        `Error fetching orders: ${error?.message}`,
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
@@ -34,9 +33,9 @@ export class RestaurantController {
   async getOrderById(@Param('id') id: string): Promise<Order> {
     try {
       return await this.restaurantService.getOrderById(id);
-    } catch (err) {
+    } catch (error) {
       throw new HttpException(
-        `Error fetching order by ID: ${err?.message}`,
+        `Error fetching order by ID: ${error?.message}`,
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
@@ -46,9 +45,9 @@ export class RestaurantController {
   async createOrder(@Body() createOrderDto: CreateOrderDto): Promise<Order> {
     try {
       return await this.restaurantService.createOrder(createOrderDto);
-    } catch (err) {
+    } catch (error) {
       throw new HttpException(
-        `Error creating order: ${err?.message}`,
+        `Error creating order: ${error?.message}`,
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
@@ -61,9 +60,9 @@ export class RestaurantController {
   ): Promise<Order> {
     try {
       return await this.restaurantService.updateOrder(id, updateOrderDto);
-    } catch (err) {
+    } catch (error) {
       throw new HttpException(
-        `Error updating order: ${err?.message}`,
+        `Error updating order: ${error?.message}`,
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
@@ -73,9 +72,9 @@ export class RestaurantController {
   async dailySalesReport() {
     try {
       return await this.restaurantService.generateDailySalesReport();
-    } catch (err) {
+    } catch (error) {
       throw new HttpException(
-        `Error generating daily sales report: ${err?.message}`,
+        `Error generating daily sales report: ${error?.message}`,
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }

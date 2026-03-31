@@ -33,7 +33,6 @@ export class Order extends Document {
     name: string;
     email: string;
     phone: string;
-    address: string;
   };
   @Prop({ required: true })
   totalPrice: number;

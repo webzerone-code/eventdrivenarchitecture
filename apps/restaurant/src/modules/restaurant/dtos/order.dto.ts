@@ -1,10 +1,12 @@
 import {
   IsArray,
+  IsDefined,
   IsEmail,
   IsEnum,
   IsNotEmpty,
   IsNumber,
   IsNumberString,
+  IsObject,
   IsOptional,
   IsString,
   Length,
@@ -26,10 +28,6 @@ class CustomerDto {
   @IsNumberString()
   @Length(10, 15)
   phone: string;
-
-  @IsString()
-  @IsNotEmpty()
-  address: string;
 }
 
 class ProductDto {
@@ -64,7 +62,9 @@ export class CreateOrderDto {
   @Type(() => ProductDto)
   products: ProductDto[];
 
-  @ValidateNested()
+  @IsDefined()
+  @IsNotEmpty()
+  @IsObject()
   @Type(() => CustomerDto)
   customer: CustomerDto;
 
