@@ -1,0 +1,20 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: restaurant-worker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: restaurant-worker
+  template:
+    metadata:
+      labels:
+        app: restaurant-worker
+    spec:
+      containers:
+        - name: restaurant-worker
+          image: DOCKER_HUP/restaurant-worker:latest
+          envFrom:
+            - configMapRef:
+                name: app-config
