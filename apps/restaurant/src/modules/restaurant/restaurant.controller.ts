@@ -68,4 +68,16 @@ export class RestaurantController {
       );
     }
   }
+  // Reports
+  @Get('reports/daily-sales')
+  async dailySalesReport() {
+    try {
+      return await this.restaurantService.generateDailySalesReport();
+    } catch (err) {
+      throw new HttpException(
+        `Error generating daily sales report: ${err?.message}`,
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
 }

@@ -5,6 +5,8 @@ import { ConfigModule, ConfigType } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Order, OrderSchema } from './schemas/order.schema';
 import dbConfig from '../../config/db.config';
+import { CacheModule } from '@nestjs/cache-manager';
+import { redisStore } from 'cache-manager-redis-yet';
 
 @Module({
   imports: [
@@ -16,6 +18,13 @@ import dbConfig from '../../config/db.config';
       ): { uri: string } => ({
         uri: mongoConfig.mongoUrlConnection.uri,
       }),
+    }),
+    CacheModule.register({
+      isGlobal: true,
+      store: redisStore,
+      host: 'redis',
+      port: 6379,
+      ttl: 3600000,
     }),
     MongooseModule.forFeature([{ name: Order.name, schema: OrderSchema }]),
   ],
