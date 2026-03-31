@@ -164,5 +164,6 @@ export class RestaurantService {
       },
     ]);
     await this.cacheManager.set(cacheKey, report, 3600000);
+    return report;
   }
 }
