@@ -17,22 +17,22 @@ export class RestaurantServiceController {
     const newOrderData = data.after;
     const rawData =
       typeof data.after === 'string' ? JSON.parse(data.after) : data.after;
-
     if (!rawData) return;
-    const elasticId = rawData._id?.$oid || rawData._id;
-    const cleanDoc = {
-      ...rawData,
-      id: elasticId, // Add a clean string ID
-      createdAt: rawData.createdAt?.$date || rawData.createdAt, // Extract number from $date
-      updatedAt: rawData.updatedAt?.$date || rawData.updatedAt, // Extract number from $date
+
+    // 1. Get the Clean ID (String)
+    const elasticId = String(rawData._id?.$oid || rawData._id);
+
+    // 2. Safe Date Extraction (Mongo formats: { $date: 123 } or { $date: "string" })
+    const getCleanDate = (val: any) => {
+      if (!val) return new Date();
+      const dateValue = val.$date || val.$numberLong || val;
+      return new Date(dateValue);
     };
 
-    delete cleanDoc._id;
-    delete cleanDoc.__v;
-    console.log(newOrderData);
-    await this.elasticsearchService.index({
+    // 3. Perform Indexing
+    const response = await this.elasticsearchService.index({
       index: 'orders',
-      id: String(elasticId),
+      id: elasticId,
       document: {
         id: elasticId,
         name: rawData.name,
@@ -40,10 +40,11 @@ export class RestaurantServiceController {
         price: rawData.price,
         status: rawData.status,
         imageUrl: rawData.imageUrl,
-        createdAt: new Date(rawData.createdAt), // Converts timestamp to Date object
-        updatedAt: new Date(rawData.updatedAt),
-      }, // Use 'body: cleanDoc' if you get a TS error
+        createdAt: getCleanDate(rawData.createdAt),
+        updatedAt: getCleanDate(rawData.updatedAt),
+      },
       refresh: true,
     });
   }
 }
+//docker exec -it  elasticsearch curl -X DELETE "http://localhost:9200/orders" -u elastic:password
