@@ -70,7 +70,7 @@ export class CreateOrderDto {
 
   @IsNumber()
   @Min(0.01)
-  totalOrderPrice: number;
+  totalPrice: number;
 }
 
 export class UpdateOrderDto extends PartialType(

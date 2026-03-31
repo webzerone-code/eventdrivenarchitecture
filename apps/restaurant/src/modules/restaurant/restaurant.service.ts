@@ -36,7 +36,7 @@ export class RestaurantService {
 
   async createOrder(createOrderDto: CreateOrderDto): Promise<Order> {
     const { products } = createOrderDto;
-    let totalOrderPrice = 0;
+    let totalPrice = 0;
     const seenProductNames = new Set<string>();
     const validatedProducts = products.map((product) => {
       const { quantity, unitePrice } = product;
@@ -54,13 +54,13 @@ export class RestaurantService {
         });
       seenProductNames.add(product.productName);
       product.totalUnitPrice = quantity * unitePrice;
-      totalOrderPrice += product.totalUnitPrice;
+      totalPrice += product.totalUnitPrice;
       return { ...product };
     });
     const order = new this.orderModel({
       ...createOrderDto,
       products: validatedProducts,
-      totalOrderPrice,
+      totalPrice,
     });
     await order.save();
     await this.cacheManager.del('dailySalesReport');
@@ -78,7 +78,7 @@ export class RestaurantService {
       });
 
     if (updateOrderDto.products) {
-      let totalOrderPrice = 0;
+      let totalPrice = 0;
       const seenProductNames = new Set<string>();
       const validatedProducts = updateOrderDto.products.map((product) => {
         const { quantity, unitePrice } = product;
@@ -96,15 +96,16 @@ export class RestaurantService {
         }
         seenProductNames.add(product.productName);
         product.totalUnitPrice = quantity * unitePrice;
-        totalOrderPrice += product.totalUnitPrice;
+        totalPrice += product.totalUnitPrice;
         return { ...product };
       });
       updateOrderDto.products = validatedProducts;
-      updateOrderDto.totalOrderPrice = totalOrderPrice;
+      updateOrderDto.totalPrice = totalPrice;
     }
     const order = await this.orderModel.findOneAndUpdate(
       { _id: id },
       { $set: updateOrderDto },
+      { new: true },
     );
     if (!order) throw new BadRequestException('Order not found');
     await this.cacheManager.del('dailySalesReport');
