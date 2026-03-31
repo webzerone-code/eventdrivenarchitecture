@@ -126,7 +126,6 @@ export class RestaurantService {
       {
         $match: {
           createdAt: { $gte: startOfDay, $lte: endOfDay },
-          //status: { $ne: 'COMPLETED' },
           status: 'COMPLETED',
         },
       },
