@@ -34,13 +34,22 @@ export class RestaurantService {
   async createOrder(createOrderDto: CreateOrderDto): Promise<Order> {
     const { products } = createOrderDto;
     let totalOrderPrice = 0;
+    const seenProductNames = new Set<string>();
     const validatedProducts = products.map((product) => {
       const { quantity, unitePrice } = product;
+      if (seenProductNames.has(product.productName)) {
+        throw new BadRequestException({
+          message: `Duplicate product found: ${product.productName}`,
+          error: 'Validation Error',
+          details: 'Each product in the order must have a unique name.',
+        });
+      }
       if (quantity < 1)
         throw new BadRequestException({
           message: 'Quantity must be greater than  1',
           error: 'Invalid Quantity',
         });
+      seenProductNames.add(product.productName);
       product.totalUnitPrice = quantity * unitePrice;
       totalOrderPrice += product.totalUnitPrice;
       return { ...product };
@@ -50,6 +59,7 @@ export class RestaurantService {
       products: validatedProducts,
       totalOrderPrice,
     });
+    await order.save();
     return await order.toObject();
   }
 
@@ -65,6 +75,7 @@ export class RestaurantService {
 
     if (updateOrderDto.products) {
       let totalOrderPrice = 0;
+      const seenProductNames = new Set<string>();
       const validatedProducts = updateOrderDto.products.map((product) => {
         const { quantity, unitePrice } = product;
         if (quantity < 1)
@@ -72,6 +83,14 @@ export class RestaurantService {
             message: 'Quantity must be greater than  1',
             error: 'Invalid Quantity',
           });
+        if (seenProductNames.has(product.productName)) {
+          throw new BadRequestException({
+            message: `Duplicate product found: ${product.productName}`,
+            error: 'Validation Error',
+            details: 'Each product in the order must have a unique name.',
+          });
+        }
+        seenProductNames.add(product.productName);
         product.totalUnitPrice = quantity * unitePrice;
         totalOrderPrice += product.totalUnitPrice;
         return { ...product };

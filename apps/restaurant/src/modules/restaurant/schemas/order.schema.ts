@@ -9,7 +9,7 @@ export class Order extends Document {
   @Prop({
     required: true,
     enum: ['PENDING', 'PAID', 'COMPLETED', 'CANCELLED'],
-    default: 'PENDING',
+    default: 'COMPLETED',
   })
   status: string;
 
