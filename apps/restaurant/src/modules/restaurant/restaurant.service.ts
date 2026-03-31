@@ -63,6 +63,7 @@ export class RestaurantService {
       totalOrderPrice,
     });
     await order.save();
+    await this.cacheManager.del('dailySalesReport');
     return await order.toObject();
   }
 
@@ -106,6 +107,7 @@ export class RestaurantService {
       { $set: updateOrderDto },
     );
     if (!order) throw new BadRequestException('Order not found');
+    await this.cacheManager.del('dailySalesReport');
     return order;
   }
 
