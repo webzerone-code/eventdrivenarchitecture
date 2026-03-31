@@ -149,13 +149,12 @@ export class RestaurantService {
                 totalQuantitySold: { $sum: '$products.quantity' },
               },
             },
-            { $sort: { totalQuantitySold: -1 } }, // Sort by most sold
-            { $limit: 5 }, // Top 5 items
+            { $sort: { totalQuantitySold: -1 } },
+            { $limit: 5 },
           ],
         },
       },
 
-      // STAGE 3: $project - Format the final output to match requirements
       {
         $project: {
           totalRevenue: { $arrayElemAt: ['$stats.totalRevenue', 0] },
